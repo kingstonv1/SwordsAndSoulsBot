@@ -1,17 +1,9 @@
+#include <windows.h>
 #include <iostream>
 #include <chrono>
 #include <thread>
-//TODO: Get colors for mid and bot no apple. maybe change top to be a different
-//pixel.
-//Set your compiler to c++20!!!!!!
 
 //Object to acess keyboard virually
-INPUT ip;
-ip.type = INPUT_KEYBOARD;
-ip.ki.wScan = 0;
-ip.ki.time = 0;
-ip.ki.dwExtraInfo = 0;
-
 
 class color
 {
@@ -23,7 +15,7 @@ class color
             unsigned int G;
             unsigned int B;
         
-            bool operator==(const RGBcolor&) const = default;
+            auto operator<=>(const RGBcolor&) const = default;
         };
         
 
@@ -41,63 +33,91 @@ class color
 
 };
 
+    color colors;
 
 color::RGBcolor topNoApple = { 195, 134, 96 };
+color::RGBcolor midNoApple = { 167, 111, 74 };
+color::RGBcolor botNoApple { 193, 129, 88 };
+color::RGBcolor backNoStar {};
 
-color::RGBcolor midNoApple 
-    { 
-    midNoApple.R = ; //Have to check where the apple goes
-    midNoApple.G = ;
-    midNoApple.B = ;
-    };
-
-color::RGBcolor botNoApple 
-{ 
-    botNoApple.R = ; //See above
-    botNoApple.G = ;
-    botNoApple.B = ; 
-};
-
-color::RGBcolor backNoStar 
-{ 
-    backNoStar.R = 187;
-    backNoStar.G = 124;
-    backNoStar.B = 83;
-};
 
 
 void sendInput(char type) //"Type" is U, D, L, or R for updownleftright
 {
+
     if ( type == 'U' )
-    {
-        ip.ki.wVk = 0x26; //Press the "UP" key
-        ip.ki.dwFlags = 0; //no idea what this does tbh
-        SendInput(1, &ip, sizeof(INPUT));
+    { 
+        INPUT ip[2];
+
+        ip[0].type = INPUT_KEYBOARD;
+        ip[0].ki.wVk = VK_UP;
+        ip[1].type = INPUT_KEYBOARD;
+        ip[1].ki.wVk = VK_UP;
+        ip[1].ki.dwFlags = KEYEVENTF_KEYUP;
+
+        SendInput(ARRAYSIZE(ip), ip, sizeof(INPUT));
     }
+
+    else if ( type == 'R' ) 
+    {
+        INPUT ip[2];
+
+        ip[0].type = INPUT_KEYBOARD;
+        ip[0].ki.wVk = VK_RIGHT;
+        ip[1].type = INPUT_KEYBOARD;
+        ip[1].ki.wVk = VK_RIGHT;
+        ip[1].ki.dwFlags = KEYEVENTF_KEYUP;
+
+        SendInput(ARRAYSIZE(ip), ip, sizeof(INPUT));
+    }
+
 }  
 
-void checks(HDC dc) 
+//765, 645
+//167, 111, 74
+
+void checks() 
 {
-        COLORREF colorTop = GetPixel(dc, 25, 13);
-        color::RGBcolor topCurrentPixel = color::getRGBValues(colorTop);
-        if ( topCurrentPixel != color::topNoApple )
-            { sendInput('U'); }
+        HDC dc = GetDC(NULL);
         
-        COLORREF colorMid = GetPixel(dc, x, y);
-        COLORREF colorBot = GetPixel(dc, x, y);
-        COLORREF colorBack = GetPixel(dc, x, y);
+        COLORREF colorTop = GetPixel(dc, 735, 450);
+        color::RGBcolor topCurrentPixel = colors.getRGBValues(colorTop);
+        if ( topCurrentPixel == topNoApple ) {}
+        else { sendInput('U'); }
+        
+        COLORREF colorMid = GetPixel(dc, 765, 645);
+        color::RGBcolor midCurrentPixel = colors.getRGBValues(colorMid);
+        if ( midCurrentPixel == midNoApple ) {}
+        else { sendInput('R'); }
+        
+        COLORREF colorBot = GetPixel(dc, 730, 810);
+        
+        // color::RGBcolor botCurrentPixel = colors.getRGBValues(colorTop);
+        // if ( botCurrentPixel == botNoApple ) {}
+        // else { sendInput('D'); }
+
+        COLORREF colorBack = GetPixel(dc, 0, 0);
+        
+        
+        ReleaseDC(NULL, dc);
 }
 
 int main() 
-{
+{    
+    std::this_thread::sleep_for (std::chrono::seconds(2));
+
     while ( true )
     {
-        HDC dc = GetDC(NULL);
-        checks(dc);        
-        ReleaseDC(NULL, dc);
-        if ( GetKeyState('p') & 0x8000 ) { break; };
+        checks();
+        
+
+        if ( GetAsyncKeyState(VK_SPACE)  ) { break; };
+
         std::this_thread::sleep_for (std::chrono::milliseconds(16));
     }
+
+
+        
 
     return 0;
 }
